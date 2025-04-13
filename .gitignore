@@ -22,3 +22,6 @@ Thumbs.db
 # MySQL dumps or data files (optional)
 *.sql
 *.csv
+
+# Ignore batch files
+*.bat
