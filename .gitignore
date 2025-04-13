@@ -12,8 +12,16 @@ build/
 env/
 venv/
 
-# Jupyter Notebook checkpoints (if you use notebooks)
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+# Logs
+*.log
+*.log.*
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # OS
 .DS_Store

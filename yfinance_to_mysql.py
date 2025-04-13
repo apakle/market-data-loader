@@ -5,8 +5,10 @@ import pandas as pd
 import pymysql
 from dotenv import load_dotenv
 import os
+import logging
+import time
 
-# Load variables from .env
+# === Load environment variables ===
 load_dotenv()
 
 # === MySQL config ===
@@ -24,25 +26,45 @@ db_config = {
     'read_timeout': timeout
 }
 
+# === Set up logging to file ===
+logging.basicConfig(
+    filename='data_loader.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'
+)
+
 # === Tickers and Intervals ===
 interval = '1m'
 period = '8d'
-assets = [{'ticker': 'EURUSD=X', 'alias': 'EURUSD', 'interval': interval, 'period': period}, 
-          {'ticker': 'SXR8.DE', 'alias': 'iShares Core S&P 500 ETF', 'interval': interval, 'period': period},
-          {'ticker': '^GSPC', 'alias': 'S&P 500', 'interval': interval, 'period': period}
-         ]
+assets = [
+    {'ticker': 'EURUSD=X', 'alias': 'EURUSD', 'interval': interval, 'period': period},
+    {'ticker': 'SXR8.DE', 'alias': 'iShares Core S&P 500 ETF', 'interval': interval, 'period': period},
+    {'ticker': '^GSPC', 'alias': 'S&P 500', 'interval': interval, 'period': period}
+]
 
-def fetch_data(ticker, period, interval):
-    print(f"Fetching {ticker} with {interval} interval for {period}")
-    df = yf.download(ticker, interval=interval, period=period, progress=False)
-    # Flatten the MultiIndex by extracting the first level (price type)
-    df.columns = [col[0] for col in df.columns]  # Extract first level ('Close', 'Open', etc.)
-    df.reset_index(inplace=True)
-    return df
+def fetch_data(ticker, period, interval, retries=3):
+    for attempt in range(retries):
+        try:
+            logging.info(f"Fetching {ticker} with {interval} interval for {period} (Attempt {attempt + 1})")
+            df = yf.download(ticker, interval=interval, period=period, progress=False)
+            if df.empty:
+                logging.warning(f"No data returned for {ticker} on attempt {attempt + 1}")
+                continue
+            df.columns = [col[0] for col in df.columns]  # Flatten MultiIndex
+            df.reset_index(inplace=True)
+            return df
+        except Exception as e:
+            logging.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
+            time.sleep(5)
+    logging.error(f"❌ All {retries} attempts failed for {ticker}")
+    return pd.DataFrame()
 
 def insert_data(cursor, data, ticker, interval_str):
     cet = pytz.timezone('CET')
     now = datetime.now(cet)
+    inserted_rows = 0
+
     for _, row in data.iterrows():
         timestamp = row['Datetime'] if 'Datetime' in row else row['Date']
         if isinstance(timestamp, pd.Timestamp):
@@ -64,24 +86,44 @@ def insert_data(cursor, data, ticker, interval_str):
             row.get('Volume', 0),
             now
         )
-        cursor.execute(sql, values)
+        try:
+            cursor.execute(sql, values)
+            inserted_rows += cursor.rowcount
+        except Exception as e:
+            logging.error(f"Error inserting data for {ticker} at {timestamp}: {e}")
+    
+    return inserted_rows
 
 def main():
-    conn = pymysql.connect(**db_config)
-    cursor = conn.cursor()
-    print("✅ Connected using PyMySQL!")
+    try:
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor()
+        logging.info("✅ Connected to MySQL database.")
 
-    # === loading data into mysql database ===
-    for asset in assets:
-        df = fetch_data(asset['ticker'], asset['period'], asset['interval'])
-        insert_data(cursor, df, asset['ticker'], asset['interval'])
+        total_inserted = 0
+        success_assets = 0
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print("✅ Data inserted successfully.")
+        for asset in assets:
+            df = fetch_data(asset['ticker'], asset['period'], asset['interval'])
+            if not df.empty:
+                inserted = insert_data(cursor, df, asset['ticker'], asset['interval'])
+                total_inserted += inserted
+                success_assets += 1
+                logging.info(f"✅ Inserted {inserted} rows for {asset['ticker']}.")
+            else:
+                logging.warning(f"⚠️ Skipped {asset['ticker']} — no data.")
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        if success_assets > 0:
+            logging.info(f"✅ Finished: Inserted a total of {total_inserted} rows for {success_assets}/{len(assets)} assets.")
+        else:
+            logging.warning("⚠️ Finished: No data was inserted for any asset.")
+    
+    except Exception as e:
+        logging.error(f"❌ Unexpected error in main(): {e}")
 
 if __name__ == "__main__":
     main()
-
-    
