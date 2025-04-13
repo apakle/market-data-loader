@@ -70,3 +70,6 @@ All data is fetched using:
 - If you want to fetch different intervals or timeframes, you can modify the interval and period in the assets list inside the script. Common interval values include '5m', '1h', '1d', etc.
 - For a longer historical data range, update the period to options like '1y', '5y', etc.
 - Be aware of Yahoo Finance rate limits and potential inconsistencies for certain tickers or markets, especially when querying frequently.
+
+## 📄 License
+This project is open-source and available under the MIT License.
