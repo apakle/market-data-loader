@@ -26,12 +26,11 @@ db_config = {
     'read_timeout': timeout
 }
 
-# === Set up logging to file ===
+# === Set up logging to console ===
 logging.basicConfig(
-    filename='data_loader.log',
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    encoding='utf-8'
+    handlers=[logging.StreamHandler()]
 )
 
 # === Tickers and Intervals ===
