@@ -9,7 +9,9 @@ import logging
 import time
 
 # === Load environment variables ===
-load_dotenv()
+# Load .env only if not running in GitHub Actions
+if not os.getenv("GITHUB_ACTIONS"):  # Checks if not running in GitHub Actions
+    load_dotenv()  # Load .env file locally
 
 # === MySQL config ===
 timeout = 10
