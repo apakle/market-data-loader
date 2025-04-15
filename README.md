@@ -24,8 +24,7 @@ CREATE TABLE market_data (
     close DECIMAL(12, 6),
     volume DECIMAL(20, 2),
     loaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(ticker, interval_type, timestamp),
-    INDEX idx_ticker_interval_time (ticker, interval_type, timestamp)
+    UNIQUE(ticker, interval_type, timestamp)
 );
 ```
 
