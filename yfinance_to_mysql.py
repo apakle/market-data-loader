@@ -41,7 +41,11 @@ period = '8d'
 assets = [
     {'ticker': 'EURUSD=X', 'alias': 'EURUSD', 'interval': interval, 'period': period},
     {'ticker': 'SXR8.DE', 'alias': 'iShares Core S&P 500 ETF', 'interval': interval, 'period': period},
-    {'ticker': '^GSPC', 'alias': 'S&P 500', 'interval': interval, 'period': period}
+    {'ticker': '^GSPC', 'alias': 'S&P 500', 'interval': interval, 'period': period},
+    {'ticker': 'AUDUSD=X', 'alias': 'AUDUSD', 'interval': interval, 'period': period},
+    {'ticker': 'NZDUSD=X', 'alias': 'NZDUSD', 'interval': interval, 'period': period},
+    {'ticker': 'GBPUSD=X', 'alias': 'GBPUSD', 'interval': interval, 'period': period},
+    {'ticker': 'GC=F', 'alias': 'Gold Futures', 'interval': interval, 'period': period}
 ]
 
 def fetch_data(ticker, period, interval, retries=3):
