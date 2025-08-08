@@ -47,7 +47,10 @@ assets = [
     {'ticker': 'GBPUSD=X', 'alias': 'GBPUSD', 'interval': interval, 'period': period},
     {'ticker': 'GC=F', 'alias': 'Gold Futures', 'interval': interval, 'period': period},
     {'ticker': 'BTC-USD', 'alias': 'Bitcoin', 'interval': interval, 'period': period},
-    {'ticker': 'ETH-USD', 'alias': 'Ethereum', 'interval': interval, 'period': period}
+    {'ticker': 'ETH-USD', 'alias': 'Ethereum', 'interval': interval, 'period': period},
+    {'ticker': '^GDAXI', 'alias': 'German DAX', 'interval': interval, 'period': period},
+    {'ticker': '^DJI', 'alias': 'Dow Jones Industrial Average', 'interval': interval, 'period': period},
+    {'ticker': '^NDX', 'alias': 'Nasdaq-100', 'interval': interval, 'period': period}    
 ]
 
 def fetch_data(ticker, period, interval, retries=3):
