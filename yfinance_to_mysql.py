@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os
 import logging
 import time
+import sys
 
 # === Load environment variables ===
 # Load .env only if not running in GitHub Actions
@@ -70,6 +71,19 @@ def fetch_data(ticker, period, interval, retries=3):
     logging.error(f"❌ All {retries} attempts failed for {ticker}")
     return pd.DataFrame()
 
+def connect_with_retry(retries=3, delay=10):
+    for attempt in range(retries):
+        try:
+            logging.info(f"Connecting to MySQL (attempt {attempt+1}/{retries})...")
+            conn = pymysql.connect(**db_config)
+            logging.info("✅ Connected to MySQL database.")
+            return conn
+        except Exception as e:
+            logging.warning(f"DB connection failed on attempt {attempt+1}: {e}")
+            time.sleep(delay)
+    logging.error("❌ Could not connect to DB after multiple attempts.")
+    raise Exception("DB connection failed")
+
 def insert_data(cursor, data, ticker, interval_str):
     cet = pytz.timezone('CET')
     now = datetime.now(cet)
@@ -106,9 +120,8 @@ def insert_data(cursor, data, ticker, interval_str):
 
 def main():
     try:
-        conn = pymysql.connect(**db_config)
+        conn = connect_with_retry()
         cursor = conn.cursor()
-        logging.info("✅ Connected to MySQL database.")
 
         total_inserted = 0
         success_assets = 0
@@ -134,6 +147,7 @@ def main():
     
     except Exception as e:
         logging.error(f"❌ Unexpected error in main(): {e}")
+        sys.exit(1)   # 🚨 This makes the GitHub Action fail
 
 if __name__ == "__main__":
     main()
