@@ -63,7 +63,9 @@ def fetch_data(ticker, period, interval, retries=3):
                 logging.warning(f"No data returned for {ticker} on attempt {attempt + 1}")
                 continue
             df.columns = [col[0] for col in df.columns]  # Flatten MultiIndex
-            df.reset_index(inplace=True)
+            df = df.reset_index()
+            df.rename(columns={df.columns[0]: "Datetime"}, inplace=True)
+            df["Datetime"] = pd.to_datetime(df["Datetime"])
             return df
         except Exception as e:
             logging.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
@@ -90,9 +92,7 @@ def insert_data(cursor, data, ticker, interval_str):
     inserted_rows = 0
 
     for _, row in data.iterrows():
-        timestamp = row['Datetime'] if 'Datetime' in row else row['Date']
-        if isinstance(timestamp, pd.Timestamp):
-            timestamp = timestamp.to_pydatetime()
+        timestamp = row['Datetime']
 
         sql = """
             INSERT IGNORE INTO market_data 
