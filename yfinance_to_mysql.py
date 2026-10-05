@@ -65,7 +65,8 @@ def fetch_data(ticker, period, interval, retries=3):
             df.columns = [col[0] for col in df.columns]  # Flatten MultiIndex
             df = df.reset_index()
             df.rename(columns={df.columns[0]: "Datetime"}, inplace=True)
-            df["Datetime"] = pd.to_datetime(df["Datetime"])
+            # Normalize timezone-aware datetimes to naive UTC for MySQL DATETIME compatibility
+            df["Datetime"] = pd.to_datetime(df["Datetime"], utc=True).dt.tz_localize(None)
             return df
         except Exception as e:
             logging.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
@@ -91,6 +92,12 @@ def insert_data(cursor, data, ticker, interval_str):
     now = datetime.now(cet)
     inserted_rows = 0
 
+    def clean(value, default=0):
+        """Convert NaN values to a default, otherwise return the value as-is."""
+        if pd.isna(value):
+            return default
+        return value
+
     for _, row in data.iterrows():
         timestamp = row['Datetime']
 
@@ -103,11 +110,11 @@ def insert_data(cursor, data, ticker, interval_str):
             ticker,
             interval_str,
             timestamp,
-            row['Open'],
-            row['High'],
-            row['Low'],
-            row['Close'],
-            row.get('Volume', 0),
+            clean(row.get('Open'), None),
+            clean(row.get('High'), None),
+            clean(row.get('Low'), None),
+            clean(row.get('Close'), None),
+            clean(row.get('Volume'), 0),
             now
         )
         try:
